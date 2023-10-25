@@ -28,11 +28,12 @@ window.onload = function () {
 
   // Call fetchHeatmap with the default value
   fetchHeatmap(0);
+  createHourLabels();
 
   document.getElementById("timeSlider").addEventListener("input", (event) => {
     const stepsBackInTime = 143 - event.target.value;
     fetchHeatmap(stepsBackInTime);
-    console.log("stepsBack", stepsBackInTime);
+    // console.log("stepsBack", stepsBackInTime);
   });
 
   document.getElementById('toggleMarkersButton').addEventListener('click', toggleMarkers);
@@ -77,7 +78,7 @@ async function fetchHeatmap(stepsBackInTime) {
   const stepTimeElement = document.querySelector(".stepTime");
   stepTimeElement.textContent = formatDateTime(targetTime);
 
-  console.log(targetTime);
+  // console.log(targetTime);
 
   // Get a MongoDB service client
   const mongodb = app.currentUser.mongoClient("mongodb-atlas");
@@ -123,7 +124,7 @@ async function fetchHeatmap(stepsBackInTime) {
 
   // Execute the aggregation
   const stations = await stationsCollection.aggregate(pipeline);
-  console.log(stations);
+  // console.log(stations);
 
   // Prepare data for heatmap
   let heatmapData = stations.map((station) => {
@@ -157,7 +158,7 @@ async function fetchHeatmap(stepsBackInTime) {
   if (map.hasLayer(markersLayer)) {
     updateMarkers(stations);
   }
-  
+
 }
 
 function updateMarkers(stations) {
@@ -182,4 +183,14 @@ function updateMarkers(stations) {
   // Update markersLayer and add it to the map
   markersLayer = L.layerGroup(markers).addTo(map);
 
+}
+
+function createHourLabels() {
+  const labelContainer = document.getElementById('sliderLabels');
+  for (let i = 24; i >= 0; i--) {  // Start from 24 and decrement to 0
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = i === 0 ? 'Now' : `-${i} `;
+    labelContainer.appendChild(label);
+  }
 }
