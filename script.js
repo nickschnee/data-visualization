@@ -83,6 +83,14 @@ async function fetchHeatmap(stepsBackInTime) {
   // Get a MongoDB service client
   const mongodb = app.currentUser.mongoClient("mongodb-atlas");
 
+  const user = await app.logIn(Realm.Credentials.anonymous());
+
+  // Ensure the user has logged in
+  if (!app.currentUser) {
+    console.error("User not authenticated");
+    return;
+  }
+
   // Get the database and collection
   const db = mongodb.db("PublibikeDB");
   const stationsCollection = db.collection("BikesPerStation");
