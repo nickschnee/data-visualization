@@ -2,29 +2,20 @@ const APP_ID = "publibikeapp-qkuoe"; // Replace with your Realm App ID
 
 const app = new Realm.App(APP_ID);
 
-async function fetchStations() {
-  // Log in using anonymous authentication
-  const user = await app.logIn(Realm.Credentials.anonymous());
-
-  // Ensure the user has logged in
-  if (!app.currentUser) {
-    console.error("User not authenticated");
-    return;
-  }
-
+async function fetchHeatmap() {
   // Get a MongoDB service client
-  const mongodb = app.currentUser.mongoClient("mongodb-atlas"); // Use app.currentUser.mongoClient
+  const mongodb = app.currentUser.mongoClient("mongodb-atlas");
 
   // Get the database and collection
   const db = mongodb.db("PublibikeDB");
-  const stationsCollection = db.collection("BikesPerStation"); // Use the BikesPerStation collection
+  const stationsCollection = db.collection("BikesPerStation");
 
   const pipeline = [
     {
-      $match: { "network.name": "Bern" }, // Filter where network name is Bern
+      $match: { "network.name": "Bern" },
     },
     {
-      $sort: { name: 1, timestamp: -1 }, // Sort by name in ascending order and timestamp in descending order
+      $sort: { name: 1, timestamp: -1 },
     },
     {
       $group: {
@@ -50,24 +41,67 @@ async function fetchStations() {
 
   // Execute the aggregation
   const stations = await stationsCollection.aggregate(pipeline);
-
   console.log(stations);
 
-  // After fetching the stations data, initialize the map and plot the stations
+  // After fetching the stations data, initialize the map
   const map = L.map("vehicleMap").setView([46.948, 7.4474], 13); // Set view to Bern's coordinates and zoom level 13
 
   // Add a map layer
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-  // Loop through the stations and plot them on the map
-  for (const station of stations) {
-    L.marker([station.latitude, station.longitude])
-      .addTo(map)
-      .bindPopup(
-        station.stationName + "<br>Vehicles: " + station.lastVehicleCount
-      ); // Displaying the most recent vehicle count in the popup
-  }
+  // Prepare data for heatmap
+  let heatmapData = stations.map((station) => {
+    return {
+      lat: station.latitude,
+      lng: station.longitude,
+      value: station.lastVehicleCount,
+    };
+  });
+
+  // Initialize and configure the heatmap
+  const cfg = {
+    radius: 0.005,
+    maxOpacity: 0.8,
+    scaleRadius: true,
+    useLocalExtrema: false,
+    latField: "lat",
+    lngField: "lng",
+    valueField: "value",
+  };
+
+  const heatmapLayer = new HeatmapOverlay(cfg);
+  heatmapLayer.setData({
+    max: 30,
+    data: heatmapData,
+  });
+
+  // Add the heatmap layer to the map
+  map.addLayer(heatmapLayer);
+
+  // Create an array to hold the markers
+  let markers = [];
+
+  // Loop through the stations data and create a marker for each station
+  stations.forEach((station) => {
+    const marker = L.marker([station.latitude, station.longitude], {
+      title: station.stationName, // Optional: add a title that will be displayed on hover
+    });
+    const popupContent = `
+      <strong>${station.stationName}</strong> <br>
+      ${station.lastVehicleCount} Bikes <br>
+       ${new Date(
+        station.lastTimeStamp
+      ).toLocaleString()} 
+  `;
+    marker.bindPopup(popupContent);
+    markers.push(marker);
+  });
+
+  // Create a layer group from the markers array and add it to the map
+  const markersLayer = L.layerGroup(markers);
+  map.addLayer(markersLayer);
 }
 
-fetchStations();
+fetchHeatmap();
+
 console.log("Hello World");
