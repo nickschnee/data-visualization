@@ -2,7 +2,83 @@ const APP_ID = "publibikeapp-qkuoe"; // Replace with your Realm App ID
 
 const app = new Realm.App(APP_ID);
 
-async function fetchHeatmap() {
+// Global variable to hold the map instance
+let map;
+// Global variable to hold the heatmap layer instance
+let heatmapLayer;
+// Global variable to hold the markers layer instance
+let markersLayer;
+
+// Initialize the map when the page loads
+window.onload = function () {
+  map = L.map("vehicleMap").setView([46.948, 7.4474], 13); // Set view to Bern's coordinates and zoom level 13
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+  // Initialize empty layers for heatmap and markers
+  heatmapLayer = new HeatmapOverlay({
+    radius: 0.005,
+    maxOpacity: 0.8,
+    scaleRadius: true,
+    useLocalExtrema: false,
+    latField: "lat",
+    lngField: "lng",
+    valueField: "value",
+  });
+  markersLayer = L.layerGroup().addTo(map);
+
+  // Call fetchHeatmap with the default value
+  fetchHeatmap(0);
+
+  document.getElementById("timeSlider").addEventListener("input", (event) => {
+    const stepsBackInTime = 143 - event.target.value;
+    fetchHeatmap(stepsBackInTime);
+    console.log("stepsBack", stepsBackInTime);
+  });
+
+  document.getElementById('toggleMarkersButton').addEventListener('click', toggleMarkers);
+
+};
+
+function toggleMarkers() {
+  if (map.hasLayer(markersLayer)) {
+    map.removeLayer(markersLayer);
+  } else {
+    map.addLayer(markersLayer);
+  }
+}
+
+function roundToNearestTenMinutes(date) {
+  let minutes = date.getMinutes();
+  let remainder = minutes % 10;
+  date.setMinutes(minutes - remainder);
+  date.setSeconds(0);
+  date.setMilliseconds(0);
+  return date;
+}
+
+function formatDateTime(targetTime){
+
+  const dateOptions = { year: "numeric", month: "long", day: "numeric" };
+  const timeOptions = { hour: "2-digit", minute: "2-digit" };
+
+  const formattedDate = targetTime.toLocaleDateString(undefined, dateOptions);
+  const formattedTime = targetTime.toLocaleTimeString(undefined, timeOptions);
+
+  return `${formattedDate}, ${formattedTime}`;
+
+}
+
+async function fetchHeatmap(stepsBackInTime) {
+  const interval = stepsBackInTime * 10 * 60 * 1000; // Convert steps to milliseconds
+  const currentTime = Date.now();
+  let targetTime = new Date(currentTime - interval);
+  targetTime = roundToNearestTenMinutes(targetTime);
+
+  const stepTimeElement = document.querySelector(".stepTime");
+  stepTimeElement.textContent = formatDateTime(targetTime);
+
+  console.log(targetTime);
+
   // Get a MongoDB service client
   const mongodb = app.currentUser.mongoClient("mongodb-atlas");
 
@@ -12,7 +88,13 @@ async function fetchHeatmap() {
 
   const pipeline = [
     {
-      $match: { "network.name": "Bern" },
+      $match: {
+        "network.name": "Bern",
+        timestamp: {
+          $gte: new Date(targetTime),
+          $lt: new Date(targetTime.getTime() + 10 * 60 * 1000),
+        },
+      },
     },
     {
       $sort: { name: 1, timestamp: -1 },
@@ -43,12 +125,6 @@ async function fetchHeatmap() {
   const stations = await stationsCollection.aggregate(pipeline);
   console.log(stations);
 
-  // After fetching the stations data, initialize the map
-  const map = L.map("vehicleMap").setView([46.948, 7.4474], 13); // Set view to Bern's coordinates and zoom level 13
-
-  // Add a map layer
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-
   // Prepare data for heatmap
   let heatmapData = stations.map((station) => {
     return {
@@ -69,39 +145,41 @@ async function fetchHeatmap() {
     valueField: "value",
   };
 
-  const heatmapLayer = new HeatmapOverlay(cfg);
+  // Update heatmap data
   heatmapLayer.setData({
     max: 30,
     data: heatmapData,
   });
 
-  // Add the heatmap layer to the map
-  map.addLayer(heatmapLayer);
+  // Ensure heatmap layer is added to the map
+  heatmapLayer.addTo(map);
 
-  // Create an array to hold the markers
+  if (map.hasLayer(markersLayer)) {
+    updateMarkers(stations);
+  }
+  
+}
+
+function updateMarkers(stations) {
+  // Clear existing markers
+  markersLayer.clearLayers();
+  
+  // Create new markers
   let markers = [];
-
-  // Loop through the stations data and create a marker for each station
   stations.forEach((station) => {
     const marker = L.marker([station.latitude, station.longitude], {
-      title: station.stationName, // Optional: add a title that will be displayed on hover
+      title: station.stationName,
     });
     const popupContent = `
       <strong>${station.stationName}</strong> <br>
       ${station.lastVehicleCount} Bikes <br>
-       ${new Date(
-        station.lastTimeStamp
-      ).toLocaleString()} 
-  `;
+       ${new Date(station.lastTimeStamp).toLocaleString()}
+    `;
     marker.bindPopup(popupContent);
     markers.push(marker);
   });
 
-  // Create a layer group from the markers array and add it to the map
-  const markersLayer = L.layerGroup(markers);
-  map.addLayer(markersLayer);
+  // Update markersLayer and add it to the map
+  markersLayer = L.layerGroup(markers).addTo(map);
+
 }
-
-fetchHeatmap();
-
-console.log("Hello World");

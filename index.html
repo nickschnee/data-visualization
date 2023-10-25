@@ -6,10 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 
+    <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/heatmap.js/2.0.1/heatmap.min.js"></script>
     <script src="leaflet-heatmap.js"></script>
+
 
 </head>
 
@@ -17,8 +19,15 @@
 
     <div id="vehicleMap" style="width: 100%; height: 500px;"></div>
 
+    <input type="range" min="0" max="143" value="143" step="1" id="timeSlider" />
+
+    <p class="stepTime"> </p>
+
+    <button id="toggleMarkersButton">Toggle Pins</button>
+
     <script src="https://unpkg.com/realm-web/dist/bundle.iife.js"></script>
     <script src="script.js"></script>
+    
 </body>
 
 </html>
