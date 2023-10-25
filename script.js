@@ -36,8 +36,9 @@ window.onload = function () {
     // console.log("stepsBack", stepsBackInTime);
   });
 
-  document.getElementById('toggleMarkersButton').addEventListener('click', toggleMarkers);
-
+  document
+    .getElementById("toggleMarkersButton")
+    .addEventListener("click", toggleMarkers);
 };
 
 function toggleMarkers() {
@@ -57,8 +58,7 @@ function roundToNearestTenMinutes(date) {
   return date;
 }
 
-function formatDateTime(targetTime){
-
+function formatDateTime(targetTime) {
   const dateOptions = { year: "numeric", month: "long", day: "numeric" };
   const timeOptions = { hour: "2-digit", minute: "2-digit" };
 
@@ -66,7 +66,6 @@ function formatDateTime(targetTime){
   const formattedTime = targetTime.toLocaleTimeString(undefined, timeOptions);
 
   return `${formattedDate}, ${formattedTime}`;
-
 }
 
 async function fetchHeatmap(stepsBackInTime) {
@@ -80,9 +79,7 @@ async function fetchHeatmap(stepsBackInTime) {
 
   // console.log(targetTime);
 
-  // Get a MongoDB service client
-  const mongodb = app.currentUser.mongoClient("mongodb-atlas");
-
+  // Log in using anonymous authentication
   const user = await app.logIn(Realm.Credentials.anonymous());
 
   // Ensure the user has logged in
@@ -90,6 +87,9 @@ async function fetchHeatmap(stepsBackInTime) {
     console.error("User not authenticated");
     return;
   }
+
+  // Get a MongoDB service client
+  const mongodb = app.currentUser.mongoClient("mongodb-atlas");
 
   // Get the database and collection
   const db = mongodb.db("PublibikeDB");
@@ -166,13 +166,12 @@ async function fetchHeatmap(stepsBackInTime) {
   if (map.hasLayer(markersLayer)) {
     updateMarkers(stations);
   }
-
 }
 
 function updateMarkers(stations) {
   // Clear existing markers
   markersLayer.clearLayers();
-  
+
   // Create new markers
   let markers = [];
   stations.forEach((station) => {
@@ -190,15 +189,15 @@ function updateMarkers(stations) {
 
   // Update markersLayer and add it to the map
   markersLayer = L.layerGroup(markers).addTo(map);
-
 }
 
 function createHourLabels() {
-  const labelContainer = document.getElementById('sliderLabels');
-  for (let i = 24; i >= 0; i--) {  // Start from 24 and decrement to 0
-    const label = document.createElement('div');
-    label.className = 'label';
-    label.textContent = i === 0 ? 'Now' : `-${i} `;
+  const labelContainer = document.getElementById("sliderLabels");
+  for (let i = 24; i >= 0; i--) {
+    // Start from 24 and decrement to 0
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = i === 0 ? "Now" : `-${i} `;
     labelContainer.appendChild(label);
   }
 }
