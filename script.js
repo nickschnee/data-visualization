@@ -17,66 +17,57 @@ async function fetchStations() {
 
   // Get the database and collection
   const db = mongodb.db("PublibikeDB");
-  const stationsCollection = db.collection("Stations");
+  const stationsCollection = db.collection("BikesPerStation"); // Use the BikesPerStation collection
 
   const pipeline = [
     {
-        $lookup: {
-            from: "StationStatus",
-            localField: "id",
-            foreignField: "stationId",
-            as: "status"
-        }
+      $match: { "network.name": "Bern" }, // Filter where network name is Bern
     },
     {
-        $match: { "status.network.name": "Bern" }
+      $sort: { name: 1, timestamp: -1 }, // Sort by name in ascending order and timestamp in descending order
     },
     {
-        $unwind: "$status"
+      $group: {
+        _id: "$name",
+        latitude: { $first: "$latitude" },
+        longitude: { $first: "$longitude" },
+        lastVehicleCount: { $first: "$bikes" },
+        lastTimeStamp: { $first: "$timestamp" },
+        stationName: { $first: "$name" },
+      },
     },
     {
-        $sort: { "status.timestamp": -1 }  // Sort by timestamp in descending order
+      $project: {
+        _id: 0,
+        stationName: 1,
+        latitude: 1,
+        longitude: 1,
+        lastVehicleCount: 1,
+        lastTimeStamp: 1,
+      },
     },
-    {
-        $group: {
-            _id: "$id",
-            latitude: { $first: "$latitude" },
-            longitude: { $first: "$longitude" },
-            vehicleCounts: {
-                $push: { 
-                    $size: { $ifNull: ["$status.vehicles", []] }
-                }
-            },
-            timestamps: {
-                $push: "$status.timestamp"
-            },
-            stationName: { $first: "$status.name" }
-        }
-    },
-    {
-        $project: {
-            _id: 0,
-            stationId: "$_id",
-            latitude: 1,
-            longitude: 1,
-            stationName: 1,
-            last10VehicleCounts: { $slice: ["$vehicleCounts", 10] },
-            last10Timestamps: { $slice: ["$timestamps", 10] }
-        }
-    }
-];
+  ];
 
+  // Execute the aggregation
+  const stations = await stationsCollection.aggregate(pipeline);
 
+  console.log(stations);
 
+  // After fetching the stations data, initialize the map and plot the stations
+  const map = L.map("vehicleMap").setView([46.948, 7.4474], 13); // Set view to Bern's coordinates and zoom level 13
 
+  // Add a map layer
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
 
-
-// Execute the aggregation
-const stations = await stationsCollection.aggregate(pipeline);
-
-console.log(stations);
+  // Loop through the stations and plot them on the map
+  for (const station of stations) {
+    L.marker([station.latitude, station.longitude])
+      .addTo(map)
+      .bindPopup(
+        station.stationName + "<br>Vehicles: " + station.lastVehicleCount
+      ); // Displaying the most recent vehicle count in the popup
+  }
 }
 
 fetchStations();
-
 console.log("Hello World");
