@@ -1,3 +1,8 @@
+// TODO: Replace the following with your own values:
+// const APP_ID = "<your Realm app ID here>"; // e.g. myapp-abcde
+// const db = "<your Atlas database name here>"; // e.g. publibike
+// const stationsCollection = "<your Atlas collection name here>"; // e.g. bikes
+
 const APP_ID = "publibikeapp-qkuoe"; // Replace with your Realm App ID
 
 const app = new Realm.App(APP_ID);
