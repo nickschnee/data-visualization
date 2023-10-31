@@ -1,5 +1,7 @@
 # Data Visualization
 
+This repository has been created for the 'Major Media Applications' course, part of the Bachelor's program in Media Engineering at the University of Applied Sciences in both Chur and Bern in Autumn 2023.
+
 ## Folder Example Connector
 
 Example for an anonymous connector to MongoDB Atlas to read from the Database.
