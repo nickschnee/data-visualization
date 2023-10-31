@@ -26,3 +26,6 @@ The final project showing the heatmap with current bike usage data and the pipel
 
 Server Side Code which is run as a Realm Function inside MongoDB Atlas.
 
+The function fetches Bikes from the Publibike API, enriches and stores them in the database.
+
+Endpoint: `https://api.publibike.ch/v1/public/partner/stations`
