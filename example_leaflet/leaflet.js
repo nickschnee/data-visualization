@@ -43,6 +43,7 @@ async function fetchStationsAndDisplayMarkers() {
     ];
 
     const stations = await stationsCollection.aggregate(pipeline);
+
     displayMarkers(stations);
 }
 
