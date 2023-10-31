@@ -16,7 +16,7 @@ window.onload = function () {
 
   // Initialize empty layers for heatmap and markers
   heatmapLayer = new HeatmapOverlay({
-    radius: 0.005,
+    radius: 0.003,
     maxOpacity: 0.8,
     scaleRadius: true,
     useLocalExtrema: false,
@@ -113,7 +113,7 @@ async function fetchHeatmap(stepsBackInTime) {
         _id: "$name",
         latitude: { $first: "$latitude" },
         longitude: { $first: "$longitude" },
-        lastVehicleCount: { $first: "$bikes" },
+        lastVehicleCount: { $first: {$size: '$vehicles'} },
         lastTimeStamp: { $first: "$timestamp" },
         stationName: { $first: "$name" },
       },
@@ -142,17 +142,6 @@ async function fetchHeatmap(stepsBackInTime) {
       value: station.lastVehicleCount,
     };
   });
-
-  // Initialize and configure the heatmap
-  const cfg = {
-    radius: 0.005,
-    maxOpacity: 0.8,
-    scaleRadius: true,
-    useLocalExtrema: false,
-    latField: "lat",
-    lngField: "lng",
-    valueField: "value",
-  };
 
   // Update heatmap data
   heatmapLayer.setData({
